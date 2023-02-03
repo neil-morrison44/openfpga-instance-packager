@@ -97,3 +97,109 @@ fn check_if_dir_matches_slots(
 
     Ok(true)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use tempfile::tempdir;
+
+    fn make_fake_files(files: Vec<&str>) -> tempfile::TempDir {
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path();
+
+        for file in files {
+            File::create(path.join(file)).unwrap();
+        }
+
+        temp_dir
+    }
+
+    #[test]
+    fn test_check_if_dir_matches_slots_bin_and_cue() {
+        let temp_dir = make_fake_files(vec![
+            "Something.bin",
+            "Something (1).cue",
+            "Something (2).cue",
+        ]);
+        let path = temp_dir.path();
+
+        let data_slots = vec![
+            serde_structs::InstancePackagerDataSlot {
+                id: 101,
+                filename: String::from("*.bin"),
+                required: true,
+                sort: serde_structs::Sort::Single,
+            },
+            serde_structs::InstancePackagerDataSlot {
+                id: 102,
+                filename: String::from("*.cue"),
+                required: true,
+                sort: serde_structs::Sort::Ascending,
+            },
+        ];
+
+        let result = check_if_dir_matches_slots(&data_slots, &path);
+
+        assert!(matches!(result, Ok(true)));
+    }
+
+    #[test]
+    fn test_check_if_dir_matches_slots_multi_bin() {
+        let temp_dir = make_fake_files(vec![
+            "Something.bin",
+            "Something_else.bin",
+            "Something (1).cue",
+            "Something (2).cue",
+        ]);
+        let path = temp_dir.path();
+
+        let data_slots = vec![
+            serde_structs::InstancePackagerDataSlot {
+                id: 101,
+                filename: String::from("*.bin"),
+                required: true,
+                sort: serde_structs::Sort::Single,
+            },
+            serde_structs::InstancePackagerDataSlot {
+                id: 102,
+                filename: String::from("*.cue"),
+                required: true,
+                sort: serde_structs::Sort::Ascending,
+            },
+        ];
+
+        let result = check_if_dir_matches_slots(&data_slots, &path);
+
+        assert!(matches!(result, Ok(false)));
+    }
+
+    #[test]
+    fn test_check_if_dir_matches_slots_missing_bin_and_cue() {
+        let temp_dir = make_fake_files(vec![
+            "Something.pin",
+            "Something (1).bue",
+            "Something (2).bue",
+        ]);
+        let path = temp_dir.path();
+
+        let data_slots = vec![
+            serde_structs::InstancePackagerDataSlot {
+                id: 101,
+                filename: String::from("*.bin"),
+                required: true,
+                sort: serde_structs::Sort::Single,
+            },
+            serde_structs::InstancePackagerDataSlot {
+                id: 102,
+                filename: String::from("*.cue"),
+                required: true,
+                sort: serde_structs::Sort::Ascending,
+            },
+        ];
+
+        let result = check_if_dir_matches_slots(&data_slots, &path);
+
+        assert!(matches!(result, Ok(false)));
+    }
+}
