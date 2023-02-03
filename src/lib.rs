@@ -5,8 +5,6 @@ use std::{error, fs};
 use std::{io, path::PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-use serde::{Deserialize, Serialize};
-
 pub static PACKAGER_NAME: &str = "instance-packager.json";
 
 pub fn find_cores_with_package_json(
@@ -29,43 +27,16 @@ pub fn find_cores_with_package_json(
     Ok(found_cores)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct InstancePackagerDataSlot {
-    id: u32,
-    filename: String,
-    sort: Sort,
-    required: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum Sort {
-    Single,
-    Ascending,
-    Descending,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct InstancePackagerOverrides {
-    data_slots: Vec<InstancePackagerDataSlot>,
-    filename: Option<String>,
-    // don't need to do memory_writes etc since those'll come in from a merge
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct InstancePackager {
-    platform_id: String,
-    data_slots: Vec<InstancePackagerDataSlot>,
-    overrides: Option<InstancePackagerOverrides>,
-}
+mod serde_structs;
 
 pub fn build_jsons_for_core(
     root_path: &PathBuf,
     core_name: &str,
 ) -> Result<(), Box<dyn error::Error>> {
     let file_name = root_path.join("Cores").join(core_name).join(PACKAGER_NAME);
-    let data = fs::read_to_string(file_name).expect("Unable to read file");
-    let instance_packager: InstancePackager = serde_json::from_str(&data).unwrap();
+    let data =
+        fs::read_to_string(&file_name).expect(&format!("Unable to read file {:?}", &file_name));
+    let instance_packager: serde_structs::InstancePackager = serde_json::from_str(&data).unwrap();
 
     let asset_folder = root_path
         .join("Assets")
@@ -102,7 +73,7 @@ pub fn build_jsons_for_core(
 }
 
 fn check_if_dir_matches_slots(
-    data_slots: &Vec<InstancePackagerDataSlot>,
+    data_slots: &Vec<serde_structs::InstancePackagerDataSlot>,
     path: &Path,
 ) -> Result<bool, Box<dyn error::Error>> {
     for slot in data_slots {
@@ -116,7 +87,9 @@ fn check_if_dir_matches_slots(
                 .filter_map(|f| f.ok())
                 .collect();
 
-            if paths.len() == 0 || (matches!(slot.sort, Sort::Single) && paths.len() > 1) {
+            if paths.len() == 0
+                || (matches!(slot.sort, serde_structs::Sort::Single) && paths.len() > 1)
+            {
                 return Ok(false);
             }
         }
