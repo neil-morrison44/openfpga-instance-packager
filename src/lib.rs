@@ -1,9 +1,10 @@
-use glob::glob;
 use std::io::ErrorKind;
 use std::path::Path;
 use std::{error, fs};
 use std::{io, path::PathBuf};
 use walkdir::{DirEntry, WalkDir};
+
+mod glob_stuff;
 
 pub static PACKAGER_NAME: &str = "instance-packager.json";
 
@@ -40,7 +41,7 @@ pub fn build_jsons_for_core(
 
     let asset_folder = root_path
         .join("Assets")
-        .join(instance_packager.platform_id)
+        .join(&instance_packager.platform_id)
         .join("common");
 
     fn is_hidden(entry: &DirEntry) -> bool {
@@ -59,17 +60,72 @@ pub fn build_jsons_for_core(
         let path = entry.path();
 
         if path.is_dir() {
-            println!("{}", path.display());
+            let folder_name = path.file_name().and_then(|f| f.to_str()).unwrap();
+            let slots = instance_packager.get_slots(&folder_name);
+            let matches = check_if_dir_matches_slots(&slots, &path).unwrap();
 
-            //TODO: merge in overrides based on path.file_name()
-            let matches = check_if_dir_matches_slots(&instance_packager.data_slots, &path).unwrap();
-            dbg!(matches);
+            if !matches {
+                continue;
+            }
 
-            // if matches, build JSON
+            println!("Found {} building json...", &folder_name);
+
+            let mut instance_json = build_json(&path, &instance_packager)?;
+            let output_path = root_path.join(&instance_packager.output);
+
+            instance_json.instance.data_path =
+                format!("{}/", path.strip_prefix(&asset_folder)?.to_str().unwrap());
+
+            let file_name = instance_packager.get_filename(&path)?;
+            let file_name = format!("{}.json", file_name);
+
+            fs::create_dir_all(&output_path)?;
+            std::fs::write(
+                output_path.join(&file_name),
+                serde_json::to_string_pretty(&instance_json).unwrap(),
+            )?;
+            println!("Wrote {} \n", &file_name);
         }
     }
 
     Ok(())
+}
+
+fn build_json(
+    folder_path: &Path,
+    instance_packager: &serde_structs::InstancePackager,
+) -> Result<serde_structs::InstanceJSON, Box<dyn error::Error>> {
+    let folder_name = folder_path.file_name().and_then(|f| f.to_str()).unwrap();
+    let slots = &instance_packager.get_slots(folder_name);
+    let mut instance_json = serde_structs::InstanceJSON::new();
+
+    for slot in slots {
+        let partial_glob = slot.filename.clone();
+        let full_glob = String::from(folder_path.join(partial_glob).to_str().unwrap());
+        let paths: Vec<PathBuf> = glob_stuff::get_glob_paths(&full_glob)?;
+
+        let sorted_paths = match slot.sort {
+            serde_structs::Sort::Single => paths,
+            serde_structs::Sort::Ascending => paths,
+            serde_structs::Sort::Descending => paths.into_iter().rev().collect(),
+        };
+
+        for (index, path) in sorted_paths.into_iter().enumerate() {
+            instance_json
+                .instance
+                .data_slots
+                .push(serde_structs::SlotsCoresAndWrites::DataSlot {
+                    id: (slot.id + index).into(),
+                    filename: String::from(
+                        path.strip_prefix(folder_path).unwrap().to_str().unwrap(),
+                    ),
+                })
+        }
+    }
+
+    instance_json.instance.memory_writes = instance_packager.get_memory_writes(&folder_name);
+    instance_json.instance.core_select = instance_packager.get_core_select(&folder_name);
+    Ok(instance_json)
 }
 
 fn check_if_dir_matches_slots(
@@ -80,12 +136,7 @@ fn check_if_dir_matches_slots(
         if slot.required {
             let partial_glob = slot.filename.clone();
             let full_glob = String::from(path.join(partial_glob).to_str().unwrap());
-
-            let paths: Vec<PathBuf> = glob(&full_glob)
-                .unwrap()
-                .into_iter()
-                .filter_map(|f| f.ok())
-                .collect();
+            let paths: Vec<PathBuf> = glob_stuff::get_glob_paths(&full_glob)?;
 
             if paths.len() == 0
                 || (matches!(slot.sort, serde_structs::Sort::Single) && paths.len() > 1)
@@ -130,12 +181,14 @@ mod tests {
                 filename: String::from("*.bin"),
                 required: true,
                 sort: serde_structs::Sort::Single,
+                as_filename: None,
             },
             serde_structs::InstancePackagerDataSlot {
                 id: 102,
                 filename: String::from("*.cue"),
                 required: true,
                 sort: serde_structs::Sort::Ascending,
+                as_filename: None,
             },
         ];
 
@@ -160,12 +213,14 @@ mod tests {
                 filename: String::from("*.bin"),
                 required: true,
                 sort: serde_structs::Sort::Single,
+                as_filename: None,
             },
             serde_structs::InstancePackagerDataSlot {
                 id: 102,
                 filename: String::from("*.cue"),
                 required: true,
                 sort: serde_structs::Sort::Ascending,
+                as_filename: None,
             },
         ];
 
@@ -189,12 +244,14 @@ mod tests {
                 filename: String::from("*.bin"),
                 required: true,
                 sort: serde_structs::Sort::Single,
+                as_filename: None,
             },
             serde_structs::InstancePackagerDataSlot {
                 id: 102,
                 filename: String::from("*.cue"),
                 required: true,
                 sort: serde_structs::Sort::Ascending,
+                as_filename: None,
             },
         ];
 
