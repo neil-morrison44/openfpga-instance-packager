@@ -1,0 +1,25 @@
+on:
+  workflow_dispatch:
+  on: [push, pull_request]
+
+jobs:
+  test:
+    name: test ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz
+          - target: x86_64-apple-darwin
+            archive: zip
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run cargo test
+        run: cargo test
