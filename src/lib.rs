@@ -152,23 +152,39 @@ fn check_if_dir_matches_slots(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use tempfile::tempdir;
+    mod test_helpers;
 
-    fn make_fake_files(files: Vec<&str>) -> tempfile::TempDir {
-        let temp_dir = tempdir().unwrap();
+    #[test]
+    fn test_find_cores_with_package_json_some() {
+        let temp_dir = test_helpers::make_fake_files(vec![
+            "Cores/someone.core/core.json",
+            "Cores/someone_else.core/core.json",
+            "Cores/someone_else.core/core.json",
+            "Cores/someone_else.core/instance-packager.json",
+        ]);
         let path = temp_dir.path();
 
-        for file in files {
-            File::create(path.join(file)).unwrap();
-        }
+        let results = find_cores_with_package_json(&PathBuf::from(path)).unwrap();
 
-        temp_dir
+        assert!(results.len() == 1);
+        assert!(results[0] == "someone_else.core");
+    }
+
+    #[test]
+    fn test_find_cores_with_package_json_none() {
+        let temp_dir = test_helpers::make_fake_files(vec![
+            "Cores/someone.core/core.json",
+            "Cores/someone_else.core/core.json",
+            "Cores/someone_else.core/core.json",
+        ]);
+        let path = temp_dir.path();
+        let results = find_cores_with_package_json(&PathBuf::from(path)).unwrap();
+        assert!(results.len() == 0);
     }
 
     #[test]
     fn test_check_if_dir_matches_slots_bin_and_cue() {
-        let temp_dir = make_fake_files(vec![
+        let temp_dir = test_helpers::make_fake_files(vec![
             "Something.bin",
             "Something (1).cue",
             "Something (2).cue",
@@ -199,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_check_if_dir_matches_slots_multi_bin() {
-        let temp_dir = make_fake_files(vec![
+        let temp_dir = test_helpers::make_fake_files(vec![
             "Something.bin",
             "Something_else.bin",
             "Something (1).cue",
@@ -231,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_check_if_dir_matches_slots_missing_bin_and_cue() {
-        let temp_dir = make_fake_files(vec![
+        let temp_dir = test_helpers::make_fake_files(vec![
             "Something.pin",
             "Something (1).bue",
             "Something (2).bue",
