@@ -149,3 +149,47 @@ impl InstanceJSON {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::InstancePackager;
+    use serde_json::json;
+
+    #[test]
+    fn test_instance_packager_get_slots() {
+        let json_data = json!({
+            "output": "some/folder/somewhere/",
+            "platform_id": "abc",
+            "data_slots": [
+                {
+                    "id": 22,
+                    "filename": "file_A.bin",
+                    "sort": "single",
+                    "required": true
+                }
+            ],
+            "overrides": {
+                "overrider": {
+                    "data_slots": [
+                        {
+                            "id": 23,
+                            "filename": "file_B.bin",
+                            "sort": "single",
+                            "required": true
+                        }
+                    ]
+                }
+            }
+        });
+
+        let instance_packager: InstancePackager = serde_json::from_value(json_data).unwrap();
+
+        let data_slots = instance_packager.get_slots("overrider");
+        assert_eq!(data_slots.len(), 1);
+        assert_eq!(data_slots[0].filename, "file_B.bin");
+
+        let data_slots = instance_packager.get_slots("non_overrider");
+        assert_eq!(data_slots.len(), 1);
+        assert_eq!(data_slots[0].filename, "file_A.bin");
+    }
+}
