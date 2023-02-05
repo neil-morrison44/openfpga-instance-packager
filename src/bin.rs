@@ -8,6 +8,8 @@ use std::path::PathBuf;
 struct Args {
     #[arg(index = 1)]
     pocket_root_path: PathBuf,
+    #[arg(short, long)]
+    all: bool,
 }
 
 fn main() {
@@ -27,6 +29,20 @@ fn main() {
     }
     println!("");
 
+    let do_all_cores = || {
+        for core_name in &cores_list {
+            build_jsons_for_core(&path, &core_name, |file_name| {
+                println!("Wrote {}", file_name);
+            })
+            .unwrap();
+        }
+    };
+
+    if args.all {
+        do_all_cores();
+        return;
+    }
+
     let numbers: Vec<String> = (1..=core_count).map(|i| i.to_string()).collect();
     let mut all_choices = vec!["all"];
     all_choices.extend(numbers.iter().map(|s| s.as_str()));
@@ -43,14 +59,15 @@ fn main() {
         match answer {
             Answer::RESPONSE(res) => match res.as_str() {
                 "all" => {
-                    for core_name in cores_list {
-                        build_jsons_for_core(&path, &core_name).unwrap();
-                    }
+                    do_all_cores();
                 }
                 _ => {
                     let index: usize = res.parse().unwrap();
                     let core_name = &cores_list[index - 1];
-                    build_jsons_for_core(&path, &core_name).unwrap();
+                    build_jsons_for_core(&path, &core_name, |file_name| {
+                        println!("Wrote {}", file_name);
+                    })
+                    .unwrap();
                 }
             },
             _ => {}

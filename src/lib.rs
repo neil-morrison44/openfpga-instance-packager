@@ -33,6 +33,7 @@ mod serde_structs;
 pub fn build_jsons_for_core(
     root_path: &PathBuf,
     core_name: &str,
+    on_json: fn(&str) -> (),
 ) -> Result<(), Box<dyn error::Error>> {
     let file_name = root_path.join("Cores").join(core_name).join(PACKAGER_NAME);
     let data =
@@ -68,8 +69,6 @@ pub fn build_jsons_for_core(
                 continue;
             }
 
-            println!("Found {} building json...", &folder_name);
-
             let mut instance_json = build_json(&path, &instance_packager)?;
             let output_path = root_path.join(&instance_packager.output);
 
@@ -80,11 +79,12 @@ pub fn build_jsons_for_core(
             let file_name = format!("{}.json", file_name);
 
             fs::create_dir_all(&output_path)?;
+            let file_path = output_path.join(&file_name);
             std::fs::write(
-                output_path.join(&file_name),
+                &file_path,
                 serde_json::to_string_pretty(&instance_json).unwrap(),
             )?;
-            println!("Wrote {} \n", &file_name);
+            on_json(&file_path.strip_prefix(root_path)?.to_str().unwrap());
         }
     }
 
@@ -110,7 +110,7 @@ fn build_json(
             serde_structs::Sort::Descending => paths.into_iter().rev().collect(),
         };
 
-        for (index, path) in sorted_paths.into_iter().enumerate() {
+        for (index, path) in sorted_paths.iter().enumerate() {
             instance_json
                 .instance
                 .data_slots
