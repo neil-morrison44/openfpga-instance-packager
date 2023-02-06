@@ -33,8 +33,8 @@ mod serde_structs;
 pub fn build_jsons_for_core(
     root_path: &PathBuf,
     core_name: &str,
-    on_json: fn(&str) -> (),
-    on_warn: fn(core_name: &str, message: &str) -> (),
+    on_json: impl Fn(&str) -> (),
+    on_warn: impl Fn(&str, &str) -> (),
 ) -> Result<(), Box<dyn error::Error>> {
     let file_name = root_path.join("Cores").join(core_name).join(PACKAGER_NAME);
     let data =
