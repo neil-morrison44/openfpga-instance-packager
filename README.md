@@ -68,23 +68,27 @@ The most basic format, for a core which needs to create instance.json files for 
 
 ```json
 {
-   "output":"Assets/pcecd/Mazamars312.PC Engine CD",
-   "platform_id": "pcecd",
-   "data_slots":[
-      {
-         "id":100,
-         "filename":"*.cue",
-         "sort":"single",
-         "required":true,
-         "as_filename":true
-      },
-      {
-         "id":101,
-         "filename":"*.bin",
-         "sort":"ascending",
-         "required":true
-      }
-   ]
+  "output": "Assets/pcecd/Mazamars312.PC Engine CD",
+  "platform_id": "pcecd",
+  "slot_limit": {
+    "count": 27,
+    "message": "This message will be shown to the user when the slots in the instance file are > count."
+  },
+  "data_slots": [
+    {
+      "id": 100,
+      "filename": "*.cue",
+      "sort": "single",
+      "required": true,
+      "as_filename": true
+    },
+    {
+      "id": 101,
+      "filename": "*.bin",
+      "sort": "ascending",
+      "required": true
+    }
+  ]
 }
 ```
 
@@ -94,6 +98,10 @@ And a more intense example, using the overrides:
 {
   "output": "Assets/ng/Mazamars312.NeoGeo",
   "platform_id": "ng",
+  "slot_limit": {
+      "count": 27,
+      "message": "This message will be shown to the user when the slots in the instance file are > count."
+   },
   "data_slots": [
     {
       "id": 3,

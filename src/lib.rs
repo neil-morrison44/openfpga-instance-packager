@@ -34,6 +34,7 @@ pub fn build_jsons_for_core(
     root_path: &PathBuf,
     core_name: &str,
     on_json: fn(&str) -> (),
+    on_warn: fn(core_name: &str, message: &str) -> (),
 ) -> Result<(), Box<dyn error::Error>> {
     let file_name = root_path.join("Cores").join(core_name).join(PACKAGER_NAME);
     let data =
@@ -80,6 +81,17 @@ pub fn build_jsons_for_core(
 
             fs::create_dir_all(&output_path)?;
             let file_path = output_path.join(&file_name);
+
+            if let Some(slot_limit) = &instance_packager.slot_limit {
+                if instance_json.instance.data_slots.len() > slot_limit.count {
+                    on_warn(
+                        &file_path.strip_prefix(root_path)?.to_str().unwrap(),
+                        &slot_limit.message,
+                    );
+                    continue;
+                }
+            }
+
             std::fs::write(
                 &file_path,
                 serde_json::to_string_pretty(&instance_json).unwrap(),
