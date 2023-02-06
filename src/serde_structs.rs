@@ -1,9 +1,6 @@
-use std::{collections::HashMap, path::Path};
-
-use glob::glob;
-use serde::{Deserialize, Serialize};
-
 use crate::glob_stuff;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct InstancePackagerDataSlot {
