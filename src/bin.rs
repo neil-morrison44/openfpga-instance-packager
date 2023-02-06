@@ -31,9 +31,16 @@ fn main() {
 
     let do_all_cores = || {
         for core_name in &cores_list {
-            build_jsons_for_core(&path, &core_name, |file_name| {
-                println!("Wrote {}", file_name);
-            })
+            build_jsons_for_core(
+                &path,
+                &core_name,
+                |file_name| {
+                    println!("Wrote {}", file_name);
+                },
+                |file_name, message| {
+                    println!("Skipped {file_name} \n {message}");
+                },
+            )
             .unwrap();
         }
     };
@@ -64,9 +71,16 @@ fn main() {
                 _ => {
                     let index: usize = res.parse().unwrap();
                     let core_name = &cores_list[index - 1];
-                    build_jsons_for_core(&path, &core_name, |file_name| {
-                        println!("Wrote {}", file_name);
-                    })
+                    build_jsons_for_core(
+                        &path,
+                        &core_name,
+                        |file_name| {
+                            println!("Wrote {}", file_name);
+                        },
+                        |file_name, message| {
+                            println!("Skipped {file_name} \n {message}");
+                        },
+                    )
                     .unwrap();
                 }
             },

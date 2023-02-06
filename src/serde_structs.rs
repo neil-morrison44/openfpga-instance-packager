@@ -1,9 +1,6 @@
-use std::{collections::HashMap, path::Path};
-
-use glob::glob;
-use serde::{Deserialize, Serialize};
-
 use crate::glob_stuff;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct InstancePackagerDataSlot {
@@ -31,6 +28,12 @@ pub(crate) struct InstancePackagerOverrides {
     pub(crate) core_select: Option<SlotsCoresAndWrites>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct InstancePackagerSlotLimit {
+    pub(crate) count: usize,
+    pub(crate) message: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct InstancePackager {
     pub(crate) output: String,
@@ -39,6 +42,7 @@ pub(crate) struct InstancePackager {
     pub(crate) platform_id: String,
     pub(crate) memory_writes: Option<Vec<SlotsCoresAndWrites>>,
     pub(crate) core_select: Option<SlotsCoresAndWrites>,
+    pub(crate) slot_limit: Option<InstancePackagerSlotLimit>,
 }
 
 impl InstancePackager {
