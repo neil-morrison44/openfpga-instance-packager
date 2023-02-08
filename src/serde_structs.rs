@@ -161,7 +161,7 @@ impl InstanceJSON {
 mod tests {
     use std::{
         fs::{create_dir_all, File},
-        path::{Path, PathBuf},
+        path::PathBuf,
     };
 
     use crate::serde_structs::SlotsCoresAndWrites;
