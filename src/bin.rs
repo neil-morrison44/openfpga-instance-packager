@@ -10,6 +10,8 @@ struct Args {
     pocket_root_path: PathBuf,
     #[arg(short, long)]
     all: bool,
+    #[arg(short, long)]
+    file_tree_copy: bool,
 }
 
 fn main() {
@@ -34,6 +36,7 @@ fn main() {
             build_jsons_for_core(
                 &path,
                 &core_name,
+                args.file_tree_copy,
                 |file_name| {
                     println!("Wrote {}", file_name);
                 },
@@ -74,6 +77,7 @@ fn main() {
                     build_jsons_for_core(
                         &path,
                         &core_name,
+                        args.file_tree_copy,
                         |file_name| {
                             println!("Wrote {}", file_name);
                         },

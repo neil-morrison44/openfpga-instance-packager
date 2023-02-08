@@ -1,3 +1,4 @@
+use std::fs::create_dir_all;
 use std::io::ErrorKind;
 use std::path::Path;
 use std::{error, fs};
@@ -33,6 +34,7 @@ mod serde_structs;
 pub fn build_jsons_for_core(
     root_path: &PathBuf,
     core_name: &str,
+    keep_file_tree: bool,
     on_json: impl Fn(&str) -> (),
     on_warn: impl Fn(&str, &str) -> (),
 ) -> Result<(), Box<dyn error::Error>> {
@@ -80,7 +82,14 @@ pub fn build_jsons_for_core(
             let file_name = format!("{}.json", file_name);
 
             fs::create_dir_all(&output_path)?;
-            let file_path = output_path.join(&file_name);
+
+            let file_path = if keep_file_tree {
+                output_path
+                    .join(&instance_json.instance.data_path)
+                    .join(&file_name)
+            } else {
+                output_path.join(&file_name)
+            };
 
             if let Some(slot_limit) = &instance_packager.slot_limit {
                 if instance_json.instance.data_slots.len() > slot_limit.count {
@@ -91,7 +100,7 @@ pub fn build_jsons_for_core(
                     continue;
                 }
             }
-
+            create_dir_all(&file_path.parent().unwrap())?;
             std::fs::write(
                 &file_path,
                 serde_json::to_string_pretty(&instance_json).unwrap(),
