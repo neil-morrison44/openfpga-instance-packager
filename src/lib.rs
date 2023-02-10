@@ -85,7 +85,7 @@ pub fn build_jsons_for_core(
 
             let file_path = if keep_file_tree {
                 output_path
-                    .join(&instance_json.instance.data_path)
+                    .join(&path.parent().unwrap().strip_prefix(&asset_folder)?)
                     .join(&file_name)
             } else {
                 output_path.join(&file_name)
