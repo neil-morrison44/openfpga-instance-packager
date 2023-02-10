@@ -1,5 +1,8 @@
 use serde_json::json;
-use std::fs::{self, create_dir_all, File};
+use std::{
+    fs::{self, create_dir_all, File},
+    path::PathBuf,
+};
 use tempfile::tempdir;
 
 fn make_fake_files(files: Vec<&str>) -> tempfile::TempDir {
@@ -165,7 +168,13 @@ fn test_build_too_many_files() {
         true,
         |_file_name| {},
         |file_name, message| {
-            assert_eq!(file_name, "Assets/platform_name/core_name/game_a.json");
+            assert_eq!(
+                file_name,
+                PathBuf::from("Assets/platform_name/core_name")
+                    .join("game_a.json")
+                    .to_str()
+                    .unwrap()
+            );
             assert_eq!(message, "oh no - too many")
         },
     )
