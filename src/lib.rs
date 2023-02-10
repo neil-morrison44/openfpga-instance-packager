@@ -1,6 +1,6 @@
 use std::fs::create_dir_all;
 use std::io::ErrorKind;
-use std::path::Path;
+use std::path::{self, Path};
 use std::{error, fs};
 use std::{io, path::PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -75,8 +75,13 @@ pub fn build_jsons_for_core(
             let mut instance_json = build_json(&path, &instance_packager)?;
             let output_path = root_path.join(&instance_packager.output);
 
-            instance_json.instance.data_path =
-                format!("{}/", path.strip_prefix(&asset_folder)?.to_str().unwrap());
+            instance_json.instance.data_path = format!(
+                "{}/",
+                path.strip_prefix(&asset_folder)?
+                    .to_str()
+                    .unwrap()
+                    .replace(path::MAIN_SEPARATOR, "/")
+            );
 
             let file_name = instance_packager.get_filename(&path)?;
             let file_name = format!("{}.json", file_name);
@@ -85,7 +90,7 @@ pub fn build_jsons_for_core(
 
             let file_path = if keep_file_tree {
                 output_path
-                    .join(&instance_json.instance.data_path)
+                    .join(&path.parent().unwrap().strip_prefix(&asset_folder)?)
                     .join(&file_name)
             } else {
                 output_path.join(&file_name)
